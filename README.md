@@ -6,7 +6,7 @@ Open-source [Agent Skills](https://docs.claude.com/en/docs/agents-and-tools/agen
 
 | Skill | What it does |
 | --- | --- |
-| [adversarial-mr-review](adversarial-mr-review/SKILL.md) | Runs a pull/merge request through repeated rounds of adversarial, architect-level review, fixing every finding immediately, until two consecutive rounds come back clean. |
+| [adversarial-mr-review](adversarial-mr-review/SKILL.md) | Runs a pull/merge request through repeated adversarial, architect-level reviews, using a new independent reviewer sub-agent every round. Fixes every finding immediately and continues until two immediately consecutive fresh reviewers report zero findings. |
 
 ## Install
 
