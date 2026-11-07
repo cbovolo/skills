@@ -11,7 +11,7 @@ Review the actual change, fix concrete findings, and repeat until two clean roun
 
 - **Every round MUST use a newly spawned independent reviewer sub-agent.** The primary agent coordinates the review and implements fixes. It must never count its own review as a round.
 - **Never reuse a reviewer**, including for the second clean round. Do not resume an old reviewer or use a follow-up task to conduct another round.
-- Spawn each reviewer with the **Agent tool** as a new agent (`subagent_type: "general-purpose"`, never `"fork"`, never `SendMessage` to an earlier reviewer), so it starts with none of this conversation. Run it in the foreground (`run_in_background: false`) and wait for its report; never poll its transcript or sleep-loop on it. Supply only the target repository/worktree, current revision and base, the paths of the CLAUDE.md files that govern it, review scope, and this skill's review checklist. The reviewer must read the actual current diff and callers itself.
+- Spawn each reviewer with the **Agent tool** as a new agent (`subagent_type: "pr-reviewer"`, never `"fork"`, never `SendMessage` to an earlier reviewer), so it starts with none of this conversation. `pr-reviewer` (`~/.claude/agents/pr-reviewer.md`) has only Bash and Read, so it starts without the ~55k tokens of unused tool schemas, tool lists and skill lists that `general-purpose` re-reads on every turn, and it already holds the read-only, batching and output-trimming rules. Only if the Agent tool says `pr-reviewer` is not found (a session started before the file existed) use `"general-purpose"` and paste that file's body, below its frontmatter, into the prompt. Run it in the foreground (`run_in_background: false`) and wait for its report; never poll its transcript or sleep-loop on it. Supply only the target repository/worktree, current revision and base, the paths of the CLAUDE.md files that govern it, review scope, and this skill's review checklist. The reviewer must read the actual current diff and callers itself.
 - Do not pass previous reviewers' findings, conclusions, clean streak, implementation explanations, or claimed test outcomes to the new reviewer. Give it the current source and raw artifacts it needs, without priming its answer.
 - Each reviewer conducts exactly one round and returns findings with concrete evidence, the reviewed revision, and any checks it actually ran. Keep the reviewer read-only; the primary agent applies fixes after the report.
 - Record every attempted round's number, unique reviewer name/ID, reviewed revision, outcome, and clean streak afterward. Include uninitialized and incomplete attempts; never omit or renumber them to make clean reports adjacent. Two clean reports from the same reviewer, or from the implementing agent, do not satisfy the stop condition.
@@ -39,18 +39,20 @@ Run rounds sequentially. After a round's report, fixes and appropriate local che
    - Concurrency and shared-state issues when the change touches shared state.
    - Security issues when the change touches auth, input handling, or secrets.
    - Missing coverage for changed behavior.
+
+   **Code comments are not findings.** A stale, wrong, misleading or missing code comment never counts as a finding: it does not make a round non-clean and does not reset the streak. The reviewer lists any it meets under a separate "Comment fixes" heading, apart from its findings. The primary agent fixes every one of them anyway, in the same pass as the findings (or on its own after a clean round). A change that touches only comments does not reset the clean streak; any change to code, tests or other non-comment text still does.
 3. **Receive and report the reviewer's actual findings.** Use `ReportFindings` if available; otherwise report plainly, most severe first, with file, line, and a concrete failure scenario. Say explicitly when the reviewer found zero issues. Do not call an incomplete or blocked review clean.
 4. **Fix every finding now** within scope. Reproduce concrete regressions where practical and run the checks appropriate to the fix. Never fabricate results, weaken assertions, disable tests, or change expectations just to accept broken behavior. A genuine test-harness correction must be explained and retain the intended behavioral check.
 5. **End that reviewer's participation and spawn a different reviewer for the next round.** Never ask the same reviewer to certify its own round again.
 
-**Stop condition:** attempted rounds **N and N+1** must both complete with zero findings, use two different fresh reviewers, and review the identical final unchanged diff. No intervening attempt is allowed. The primary agent's checks do not replace either independent review.
+**Stop condition:** attempted rounds **N and N+1** must both complete with zero findings, use two different fresh reviewers, and review the identical final diff (comment-only edits between them allowed). No intervening attempt is allowed. The primary agent's checks do not replace either independent review.
 
 Track the clean streak explicitly:
 
 - Start every newly requested review run at **0**; do not carry clean reports forward from an earlier run.
 - A completed zero-finding round against the unchanged diff increments the streak by one.
 - An attempt that ends with findings or is incomplete, cancelled, interrupted, blocked, timed out, or unable to initialize resets the streak to **0**, even when no source changed. Never skip that attempt when determining adjacency. A progress wait that yields while the same reviewer continues running is not a new or failed review attempt.
-- Any source or test change resets the streak to **0**.
+- Any source or test change resets the streak to **0**, except a change to code comments only, which leaves it as it is.
 - Stop only at **2**, and report the two adjacent attempt numbers, distinct reviewers, and identical reviewed revision. For example, **clean → incomplete → clean** ends at **1**, not 2; another fresh clean round is required.
 
 **Safety valve:** after roughly 8-10 rounds without convergence, report unresolved findings and the concrete decision or blocker. Do not claim completion.
@@ -63,6 +65,8 @@ Keep reports short and traceable:
 Round N — <clean | N findings | incomplete> — reviewer: <unique name/ID> — revision: <SHA> — clean streak: <0 | 1 | 2>
 [if findings, one per line:]
 - [severity] file:line — concrete failure → fix applied
+[if comment fixes, one per line; these never count as findings:]
+- comment file:line — what was wrong → fixed
 ```
 
 In the final report, give the total attempted and completed round counts, distinct reviewer identities, incomplete-attempt reasons, findings and fixes, and checks actually executed. Identify the adjacent final clean pair by attempt number and revision. Distinguish a review round from a test run. Do not count earlier runs or self-reviews toward the clean streak.

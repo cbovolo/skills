@@ -18,6 +18,13 @@ git clone https://github.com/cbovolo/skills.git
 cp -r skills/adversarial-mr-review ~/.claude/skills/
 ```
 
+`adversarial-mr-review` also needs its lean reviewer agent, which has only Bash and Read:
+
+```bash
+mkdir -p ~/.claude/agents
+cp skills/adversarial-mr-review/agents/pr-reviewer.md ~/.claude/agents/
+```
+
 ## License
 
 MIT
