@@ -57,6 +57,13 @@ Track the clean streak explicitly:
 
 **Safety valve:** after roughly 8-10 rounds without convergence, report unresolved findings and the concrete decision or blocker. Do not claim completion.
 
+## Checks between rounds
+
+- **Between rounds, run tiered checks, not the full CI suite.** Run what the fix touches: the test files for the changed code, and the database suite when SQL changed. Also run the cheap whole-repo checks: typecheck and lint for each app whose code changed, the repo's audits (such as file size and i18n), and its rule tests. A whole-suite run that takes minutes and covers code the fix never touched is waste.
+- **Run the full CI set once, at the end.** Do it after the final clean pair, and after any rebase onto the latest base branch. That run gates the push.
+- **Do not push or update the PR mid-loop.** Commit locally, keep rebasing onto the latest base branch while the loop runs, and push only once two clean rounds and the final full run are done.
+- **A rebase that changes the reviewed tree resets the streak, like any other change.** If the base moved before the final push, rebase, run the full set, and review again.
+
 ## Round report format
 
 Keep reports short and traceable:
