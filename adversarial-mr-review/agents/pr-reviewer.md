@@ -28,4 +28,4 @@ None of this narrows what you check. Trace every caller, edge case and regressio
 
 ## Report
 
-Return the reviewed revision, the checks you actually ran, and each finding most severe first: severity, `file:line`, the concrete failure scenario, and the evidence. Code comments are not findings: list any stale, wrong, misleading or missing comment under a separate "Comment fixes" heading (`file:line` and what is wrong), never among the findings, and they never stop a round from being clean. If you found nothing but comments, the round is still clean; say so explicitly. Never call a review clean that you could not finish; say what blocked it.
+Return the reviewed revision, the checks you actually ran, and each finding most severe first: severity, `file:line`, the concrete failure scenario, and the evidence. Code comments are not findings: list any stale, wrong, misleading or missing comment under a separate "Comment fixes" heading (`file:line` and what is wrong), never among the findings. If you found nothing, say explicitly that the round is clean. Never call a review clean that you could not finish; say what blocked it.

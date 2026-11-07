@@ -40,19 +40,19 @@ Run rounds sequentially. After a round's report, fixes and appropriate local che
    - Security issues when the change touches auth, input handling, or secrets.
    - Missing coverage for changed behavior.
 
-   **Code comments are not findings.** A stale, wrong, misleading or missing code comment never counts as a finding: it does not make a round non-clean and does not reset the streak. The reviewer lists any it meets under a separate "Comment fixes" heading, apart from its findings. The primary agent fixes every one of them anyway, in the same pass as the findings (or on its own after a clean round). A change that touches only comments does not reset the clean streak; any change to code, tests or other non-comment text still does.
+   **Code comments are not findings.** A stale, wrong, misleading or missing code comment never counts as a finding. The reviewer lists any it meets under a separate "Comment fixes" heading, apart from its findings, and the primary agent fixes every one of them.
 3. **Receive and report the reviewer's actual findings.** Use `ReportFindings` if available; otherwise report plainly, most severe first, with file, line, and a concrete failure scenario. Say explicitly when the reviewer found zero issues. Do not call an incomplete or blocked review clean.
 4. **Fix every finding now** within scope. Reproduce concrete regressions where practical and run the checks appropriate to the fix. Never fabricate results, weaken assertions, disable tests, or change expectations just to accept broken behavior. A genuine test-harness correction must be explained and retain the intended behavioral check.
 5. **End that reviewer's participation and spawn a different reviewer for the next round.** Never ask the same reviewer to certify its own round again.
 
-**Stop condition:** attempted rounds **N and N+1** must both complete with zero findings, use two different fresh reviewers, and review the identical final diff (comment-only edits between them allowed). No intervening attempt is allowed. The primary agent's checks do not replace either independent review.
+**Stop condition:** attempted rounds **N and N+1** must both complete with zero findings, use two different fresh reviewers, and review the identical final unchanged diff. No intervening attempt is allowed. The primary agent's checks do not replace either independent review.
 
 Track the clean streak explicitly:
 
 - Start every newly requested review run at **0**; do not carry clean reports forward from an earlier run.
 - A completed zero-finding round against the unchanged diff increments the streak by one.
 - An attempt that ends with findings or is incomplete, cancelled, interrupted, blocked, timed out, or unable to initialize resets the streak to **0**, even when no source changed. Never skip that attempt when determining adjacency. A progress wait that yields while the same reviewer continues running is not a new or failed review attempt.
-- Any source or test change resets the streak to **0**, except a change to code comments only, which leaves it as it is.
+- Any source or test change resets the streak to **0**.
 - Stop only at **2**, and report the two adjacent attempt numbers, distinct reviewers, and identical reviewed revision. For example, **clean → incomplete → clean** ends at **1**, not 2; another fresh clean round is required.
 
 **Safety valve:** after roughly 8-10 rounds without convergence, report unresolved findings and the concrete decision or blocker. Do not claim completion.
